@@ -24,21 +24,24 @@ def load_pdf(file_path: str) -> list[dict[str, any]]:
             if not text or not text.strip():
                 continue
 
-
+# Strips the common header and footer text from the page text.
+# Documents often have confidential plastered across the top and bottom of each page, which can interfere with the quality of the extracted text.
             text = _clean_page_text(text)
 
             if text.strip():
                 pages.append({
                     "text": text, 
-                    "page_number": i + 1, 
+                    "page_number": i + 1, # indexed the number of the page starting from 1, which is more intuitive for users than starting from 0.
                     "source": source_name, 
                     "file_type": "pdf"
                 })
                 
         return_pages
 
+# The following code is for the DOCX loader, which extracts text from DOCX files using the python-docx library.
 
 def load_docx(file_path:str) -> list[dict[str, any]]: 
+    """ The load_docx function is designed to extract text from a DOCX file and organize it into virtual pages based on a specified page size. It uses the python-docx library to read the DOCX file and iterates through its paragraphs to accumulate text until it reaches the defined virtual page size. Each virtual page is then stored as a dictionary containing the text, page number, source name, and file type. Finally, the function returns a list of these virtual pages."""
 
     source_name = Path(file_path).name
     doc = Document(file_path)
@@ -48,7 +51,7 @@ def load_docx(file_path:str) -> list[dict[str, any]]:
     current_text = []
     current_length = 0
     virtual_page_number = 1
-    virtual_page_size = 3000
+    virtual_page_size = 3000 #Characters per the virtual page, which is a common size for LLMs to process effectively. This can be adjusted based on the specific requirements of the application or the capabilities of the LLM being used.
 
     for para in doc.paragraphs:
         text = para.text.strip()
@@ -57,7 +60,7 @@ def load_docx(file_path:str) -> list[dict[str, any]]:
 
         current_text.append(text)
         current_length += len(text)
-
+# Once the accumulated text reaches or exceeds the defined virtual page size, it creates a new virtual page by joining the accumulated text and appending it to the pages list as a dictionary. The current text and length are then reset, and the virtual page number is incremented for the next page. This process continues until all paragraphs have been processed, and any remaining text is added as a final virtual page if it exists.
         if current_length >= virtual_page_size:
             pages.append({
                 "text": "\n".join(current_text), 
@@ -65,7 +68,7 @@ def load_docx(file_path:str) -> list[dict[str, any]]:
                 "source": source_name, 
                 "file_type": "docx"
             }) 
-
+ # Flush any remaining text as a final page if it exists. This ensures that any text that did not reach the virtual page size threshold is still included in the output as a separate page.
             current_text = []
             current_length = 0
             virtual_page_number += 1
@@ -80,6 +83,7 @@ def load_docx(file_path:str) -> list[dict[str, any]]:
         
     return pages
 
+# The following code is for the main loader function, which determines the file type and calls the appropriate loader function based on the file extension. It also includes a function to load all supported documents from a directory.
 
 def load_document(file_path: str) -> list[dict[str, any]]: 
 
@@ -108,4 +112,14 @@ def load_directory(dir_path: str) -> list[dict[str, any]]:
     ]
 
     if not files: 
-        raise ValueError(f"No supported files founn in directory: ")
+        raise ValueError(f"No supported files found in directory: {dir_path}")
+    
+    for file in sorted(files):
+        print(f" Loading: {file.name}")
+        pages = load_document(str(file))
+        all_pages.extend(pages)
+        print(f"    → {len(pages)} pages extracted")
+    
+    return all_pages
+
+# Helper function to clean page text by removing common headers and footers. This is a simple implementation that can be expanded based on specific document formats or patterns.
