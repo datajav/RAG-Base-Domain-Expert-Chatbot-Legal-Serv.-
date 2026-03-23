@@ -123,3 +123,26 @@ def load_directory(dir_path: str) -> list[dict[str, any]]:
     return all_pages
 
 # Helper function to clean page text by removing common headers and footers. This is a simple implementation that can be expanded based on specific document formats or patterns.
+
+def _clean_page_text(text: str) -> str:
+
+    lines = text.split("\n")
+    cleaned = []
+    for line in lines: 
+        stripped = line.strip()
+
+        if stripped.isdigit():
+            continue
+
+    boilerplate =  {"confidential", "draft", "privileged and confidential", "attorney-client privileged", "do not distribute"}
+
+        if stripped.lower() in boilerplate:
+           continue
+    
+    cleaned.append(line)
+
+result = "\n".join(cleaned)
+while "\n\n\n" in result:
+    result = result.replace("\n\n\n", "\n\n")
+    
+    return result
