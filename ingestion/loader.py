@@ -15,7 +15,7 @@ def load_pdf(file_path: str) -> list[dict[str, any]]:
    "For each page, it extracts the text and checks if it is not empty or just whitespace. "
    "If the text is valid, it cleans the text using the _clean_page_text function and appends a dictionary containing the cleaned text, page number, source name, and file type to the pages list. Finally, it returns the list of pages."
    
-   
+   source_name = Path(file_path).name
    pages = []
    with pdfplumber.open(file_path) as pdf: 
         for i, page in enumerate(pdf.pages):
@@ -24,8 +24,8 @@ def load_pdf(file_path: str) -> list[dict[str, any]]:
             if not text or not text.strip():
                 continue
 
-# Strips the common header and footer text from the page text.
-# Documents often have confidential plastered across the top and bottom of each page, which can interfere with the quality of the extracted text.
+            # Strips the common header and footer text from the page text.
+            # Documents often have confidential plastered across the top and bottom of each page, which can interfere with the quality of the extracted text.
             text = _clean_page_text(text)
 
             if text.strip():
@@ -36,7 +36,7 @@ def load_pdf(file_path: str) -> list[dict[str, any]]:
                     "file_type": "pdf"
                 })
                 
-        return_pages
+   return pages
 
 # The following code is for the DOCX loader, which extracts text from DOCX files using the python-docx library.
 
@@ -128,21 +128,22 @@ def _clean_page_text(text: str) -> str:
 
     lines = text.split("\n")
     cleaned = []
+
+    boilerplate = {"confidential", "draft", "privileged and confidential", "attorney-client privileged", "do not distribute"}
+
     for line in lines: 
         stripped = line.strip()
 
         if stripped.isdigit():
             continue
 
-    boilerplate =  {"confidential", "draft", "privileged and confidential", "attorney-client privileged", "do not distribute"}
+        if stripped.lower() in boilerplate: 
+            continue
+        
+        cleaned.append(line)
 
-        if stripped.lower() in boilerplate:
-           continue
-    
-    cleaned.append(line)
-
-result = "\n".join(cleaned)
-while "\n\n\n" in result:
-    result = result.replace("\n\n\n", "\n\n")
+    result = "\n".join(cleaned)
+    while "\n\n\n" in result:
+        result = result.replace("\n\n\n", "\n\n")
     
     return result
