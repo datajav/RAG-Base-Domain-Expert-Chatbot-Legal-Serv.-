@@ -18,4 +18,21 @@ def chunk_legal_document(
     min_chunk_size: int = 100, 
     overlap_sentences: int = 2,
 ) -> list[dict[str, Any]]:
+    
+    all_chunks = []
+    chunk_index = 0
 
+    for page in pages: 
+        page_chunks = chunk_page(
+            page_text=page["text"], 
+            source=page["text"],
+            page_number=page["page_number"], 
+            max_chunk_size=max_chunk_size
+            min_chunk_size=min_chunk_size
+            overlap_sentences=overlap_sentences
+            start_chunk_index=chunk_index
+        )
+        all_chunks.extend(page_chunks)
+        chunk_index += len(page_chunks)
+        return all_chunks
+    
