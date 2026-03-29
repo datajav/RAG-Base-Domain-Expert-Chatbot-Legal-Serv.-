@@ -138,15 +138,18 @@ def _split_into_sections(text: str) -> list[dict[str, any]]:
     Returns a list of dicts with keys: section_number, section_title, text.
     """
     # Implementation would involve applying the SECTION_PATTERNS to the text and extracting matches to define section boundaries. Each section would be stored with its number, title, and text content for further processing in chunking.
-    pass
+    section_starts = []
 
-section_starts = []
+    for pattern in SECTION_PATTERNS:
+        for match in pattern.finditer(text):
+            section_starts.append({
+                "pos":match.start(),
+                "section_number": _extract_section_number(match), 
+                "section_title": _extract_section_title(match)
+            })
 
-for pattern in SECTION_PATTERNS:
-    for match in pattern.finditer(text):
-        section_starts.append({
-            "pos":match.start(),
-            "section_number": _extract_section_number(match), 
-            "section_title": _extract_section_title(match)
-        })
+    section_starts.sort(key=lambda x: x["pos"])
+    section_starts = deduplicate_sections(section_starts)
 
+    if not section_starts:
+        return [{"text": text, "section_number": "", "section_title": ""}]
