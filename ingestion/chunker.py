@@ -42,10 +42,10 @@ def chunk_legal_document(
             page_text=page["text"], 
             source=page["text"],
             page_number=page["page_number"], 
-            max_chunk_size=max_chunk_size
-            min_chunk_size=min_chunk_size
-            overlap_sentences=overlap_sentences
-            start_chunk_index=chunk_index
+            max_chunk_size=max_chunk_size,
+            min_chunk_size=min_chunk_size,
+            overlap_sentences=overlap_sentences,
+            start_chunk_index=chunk_index,
         )
         all_chunks.extend(page_chunks)
         chunk_index += len(page_chunks)
@@ -53,5 +53,75 @@ def chunk_legal_document(
     
 def chunk_page(
     page_text: str, 
-    source:
-)
+    source: str, 
+    page_number: int, 
+    max_chunk_size: int, 
+    min_chunk_size: int, 
+    overlap_sentences: int, 
+    start_chunk_index: int, 
+) -> list[dict[str, any]]:
+    """
+    Chunk a single page of text into clause-aware chunks.
+
+    This function uses regex patterns to identify potential clause boundaries
+    (like numbered sections or ALL-CAPS headings) and splits the text accordingly.
+    It also ensures that chunks are within the specified size limits and includes
+    sentence-level overlap for better context.
+
+    Args:
+        page_text:         The raw text of the page to be chunked.
+        source:            The source identifier (e.g., filename) for metadata.
+        page_number:       The original page number from the document.
+        max_chunk_size:    Maximum characters per chunk.
+        min_chunk_size:    Minimum characters for a valid chunk.
+        overlap_sentences: Number of sentences to repeat between chunks.
+        start_chunk_index: The starting index for chunk numbering.
+
+    Returns:
+        A list of chunk dicts with metadata (see module docstring for schema).
+    """
+    
+    # Implementation goes here, including regex-based splitting and chunk assembling with overlap. This is a complex function that would require careful handling of text boundaries and metadata assignment.
+
+    sections = _split_into_sections(page_text)
+
+    chunks = [] 
+    chunk_index = start_chunk_index
+    overlap_buffer =  [] 
+    
+    for section in sections: 
+        section_text = section["text"].strip()
+        section_number = section["section_number"]
+        section_title = section["section_title"]
+
+        if overlap_buffer: 
+            section_text = "\n".join(overlap_buffer) + "\n\n" + section_text
+
+        if len(section_text) <= max_chunk_size: 
+            if len(section_text) >= min_chunk_size:
+                chunks.append(_make_chunk(
+                    text=section_text,
+                    source=source, 
+                    page_number=page_number,
+                    chunk_index=chunk_index,
+                    section_number=section_number,
+                    section_title=section_title,
+                       ))
+                chunk_index += 1
+                overlap_buffer = get_last_sentences(section_text, overlap_sentences)
+            else:
+                sub_chunks = _split_long_section(
+                    text=section_text,
+                    max_chunk_size=max_chunk_size,
+                    min_chunk_size=min_chunk_size,
+                )
+            
+                for sub_text in sub_chunks:
+                    chunks.append(_make_chunk(
+                        text=sub_text,
+                        source=source, 
+                        page_number=page_number,
+                        chunk_index=chunk_index,
+                        section_number=section_number,
+                        section_title=section_title,
+                    ))
